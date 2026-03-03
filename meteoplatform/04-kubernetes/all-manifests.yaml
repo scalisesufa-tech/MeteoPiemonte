@@ -1,0 +1,573 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin-secret
+  namespace: group-6
+type: Opaque
+stringData:
+  GF_SECURITY_ADMIN_USER: admin
+  GF_SECURITY_ADMIN_PASSWORD: admin
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: meteo-db-secret
+  namespace: group-6
+type: Opaque
+stringData:
+  POSTGRES_DB: meteo
+  POSTGRES_USER: meteo
+  POSTGRES_PASSWORD: meteo
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secret
+  namespace: group-6
+type: Opaque
+stringData:
+  RABBITMQ_DEFAULT_USER: guest
+  RABBITMQ_DEFAULT_PASS: guest
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  namespace: group-6
+data:
+  datasources/datasource.yml: "apiVersion: 1\ndatasources:\n  - name: TimescaleDB\n\
+    \    type: postgres\n    access: proxy\n    url: db:5432\n    database: meteo\n\
+    \    user: meteo\n    secureJsonData:\n      password: meteo\n    jsonData:\n\
+    \      sslmode: \"disable\"\n      postgresVersion: 1400\n      timescaledb: true\n"
+  dashboards/dashboard.yml: "apiVersion: 1\nproviders:\n  - name: 'default'\n    orgId:\
+    \ 1\n    folder: ''\n    type: file\n    disableDeletion: false\n    editable:\
+    \ true\n    options:\n      path: /etc/grafana/provisioning/dashboards\n"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meteo-db-init
+  namespace: group-6
+data:
+  init.sql: "CREATE EXTENSION IF NOT EXISTS timescaledb;\n\nCREATE TABLE IF NOT EXISTS\
+    \ meteo_observation (\n  id BIGSERIAL PRIMARY KEY,\n  station_id TEXT,\n  station_name\
+    \ TEXT,\n  city TEXT,\n  lat DOUBLE PRECISION,\n  lon DOUBLE PRECISION,\n  observed_at\
+    \ TIMESTAMP NOT NULL,\n  temperature DOUBLE PRECISION,\n  relative_humidity DOUBLE\
+    \ PRECISION,\n  pressure DOUBLE PRECISION,\n  raw_json TEXT\n);\n\nSELECT create_hypertable('meteo_observation',\
+    \ 'observed_at', if_not_exists => TRUE);\n\nCREATE INDEX IF NOT EXISTS idx_meteo_station_time\
+    \ ON meteo_observation (station_id, observed_at DESC);\nCREATE INDEX IF NOT EXISTS\
+    \ idx_meteo_city ON meteo_observation (city);\n"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: group-6
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: csi-cinder-fast
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meteo-db
+  namespace: group-6
+  labels:
+    app: meteo-db
+spec:
+  serviceName: meteo-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meteo-db
+  template:
+    metadata:
+      labels:
+        app: meteo-db
+    spec:
+      containers:
+      - name: timescaledb
+        image: timescale/timescaledb:latest-pg14
+        ports:
+        - containerPort: 5432
+          name: postgres
+        envFrom:
+        - secretRef:
+            name: meteo-db-secret
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+          readOnly: true
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: init
+        configMap:
+          name: meteo-db-init
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: csi-cinder-fast
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: group-6
+  labels:
+    app: rabbitmq
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management
+        ports:
+        - containerPort: 5672
+          name: amqp
+        - containerPort: 15672
+          name: mgmt
+        envFrom:
+        - secretRef:
+            name: rabbitmq-secret
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/rabbitmq
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rabbitmq-diagnostics -q ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - rabbitmq-diagnostics -q ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: csi-cinder-fast
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meteo-core
+  namespace: group-6
+  labels:
+    app: meteo-core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: meteo-core
+  template:
+    metadata:
+      labels:
+        app: meteo-core
+    spec:
+      containers:
+      - name: meteo-core
+        image: REPLACE_ME_REGISTRY/meteo-core:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: docker
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://meteo-db:5432/meteo
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: meteo-db-secret
+              key: POSTGRES_USER
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: meteo-db-secret
+              key: POSTGRES_PASSWORD
+        - name: SPRING_RABBITMQ_HOST
+          value: rabbitmq
+        - name: SPRING_RABBITMQ_PORT
+          value: '5672'
+        - name: SPRING_RABBITMQ_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secret
+              key: RABBITMQ_DEFAULT_USER
+        - name: SPRING_RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secret
+              key: RABBITMQ_DEFAULT_PASS
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analysis-service
+  namespace: group-6
+  labels:
+    app: analysis-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analysis-service
+  template:
+    metadata:
+      labels:
+        app: analysis-service
+    spec:
+      containers:
+      - name: analysis-service
+        image: REPLACE_ME_REGISTRY/analysis-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: RABBITMQ_URL
+          value: amqp://guest:guest@rabbitmq:5672/
+        - name: QUEUE_NAME
+          value: meteo.realtime
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: group-6
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: REPLACE_ME_REGISTRY/frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: REACT_APP_CORE_BASE
+          value: http://meteo-core:8080
+        - name: REACT_APP_ANALYSIS_BASE
+          value: http://analysis-service:8000
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: group-6
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - secretRef:
+            name: grafana-admin-secret
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/grafana
+        - name: provisioning
+          mountPath: /etc/grafana/provisioning
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: grafana-data
+      - name: provisioning
+        configMap:
+          name: grafana-provisioning
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analysis-service
+  namespace: group-6
+spec:
+  selector:
+    app: analysis-service
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: group-6
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: group-6
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meteo-core
+  namespace: group-6
+spec:
+  selector:
+    app: meteo-core
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meteo-db
+  namespace: group-6
+spec:
+  selector:
+    app: meteo-db
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: group-6
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: mgmt
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: analysis-route
+  namespace: group-6
+  labels:
+    app: analysis-service
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-gateway
+    namespace: default
+    sectionName: https
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /group-6/analysis
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - group: ''
+      kind: Service
+      name: analysis-service
+      port: 8000
+      weight: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend-route
+  namespace: group-6
+  labels:
+    app: frontend
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-gateway
+    namespace: default
+    sectionName: https
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /group-6
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - group: ''
+      kind: Service
+      name: frontend
+      port: 3000
+      weight: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: meteo-core-route
+  namespace: group-6
+  labels:
+    app: meteo-core
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: shared-gateway
+    namespace: default
+    sectionName: https
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /group-6/core
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+    backendRefs:
+    - group: ''
+      kind: Service
+      name: meteo-core
+      port: 8080
+      weight: 1

@@ -1,0 +1,14 @@
+# Kubernetes Configuration
+# Modifica questo file per cambiare registry, namespace e altre configurazioni
+# Questo valore verrà usato in tutti i deployment
+
+# Docker Image Registry Configuration
+imageRegistry: "docker.io/bortol88"
+imagePrefix: "03b-microservices-async"
+imageTag: "latest"
+
+# Kubernetes Namespace
+namespace: "group-1"
+
+# Esempio di immagine completa: ${imageRegistry}/${imagePrefix}-${serviceName}:${imageTag}
+# Esempio: docker.io/bortol88/03b-microservices-async-api-gateway:latest
