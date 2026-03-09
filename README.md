@@ -1,191 +1,379 @@
-# 🌦️ MeteoPlatform
-## Piattaforma distribuita per monitoraggio, analisi e visualizzazione meteo in tempo reale
+🌦️ Meteo Platform
+Cloud-native microservices architecture for real-time weather data collection, analysis and visualization
 
-> Documentazione tecnica per consegna accademica (architettura, scelte progettuali, Kubernetes, trade-off).
+This project implements a cloud-native platform for collecting, processing and visualizing meteorological data in real time.
 
----
+The system is designed using a microservices architecture, where each component performs a specific task and communicates with other services through REST APIs and asynchronous messaging.
 
-## 1. Contesto e obiettivi
+The platform demonstrates how to design a scalable, resilient and containerized distributed system, leveraging modern technologies such as:
 
-MeteoPlatform è un progetto end-to-end che dimostra come costruire una pipeline **data-driven** e **cloud-native** per dati meteorologici:
+Docker
 
-- **acquisizione periodica** da sorgenti esterne;
-- **persistenza storica** su database time-series;
-- **disaccoppiamento tramite eventi** (message broker);
-- **analisi spaziale** (interpolazione su mappa);
-- **forecast di breve orizzonte**;
-- **visualizzazione web interattiva**.
+Kubernetes
 
-L’obiettivo non è solo “far funzionare” il sistema, ma motivare le scelte in funzione di vincoli reali:
+Spring Boot
 
-1. limiti delle API esterne (rate-limit giornaliero/minuto),
-2. affidabilità in ambiente condiviso,
-3. riproducibilità del deploy,
-4. separazione chiara tra componenti stateful/stateless.
+FastAPI
 
----
+RabbitMQ
 
-## 2. Architettura del sistema
+PostgreSQL / TimescaleDB
 
-L’architettura è composta da sei componenti principali:
+React
 
-### 2.1 `meteo-core-service` (Java 17 + Spring Boot)
-Responsabilità:
-- polling dei dati da Open-Meteo;
-- normalizzazione payload;
-- persistenza su TimescaleDB;
-- pubblicazione eventi realtime su RabbitMQ.
+Grafana
 
-### 2.2 `analysis-service` (Python + FastAPI)
-Responsabilità:
-- consumo eventi RabbitMQ;
-- calcolo endpoint analitici (`latest`, `stats`, `choropleth`);
-- endpoint forecast (`/forecast`, `/choropleth/forecast`);
-- interpolazione spaziale IDW.
+🎯 Project Goals
 
-### 2.3 `frontend` (React + Leaflet + Recharts)
-Responsabilità:
-- rendering punti stazione su mappa;
-- heat/choropleth interpolata;
-- confronto dati storici + previsione;
-- selezione metrica (temperatura/pressione/umidità).
+The goal of the project is to implement a complete data pipeline for meteorological data that includes:
 
-### 2.4 `meteo-db` (TimescaleDB/PostgreSQL)
-Responsabilità:
-- storage storico osservazioni;
-- hypertable per query time-series efficienti.
+Data ingestion from external weather APIs
 
-### 2.5 `rabbitmq`
-Responsabilità:
-- backbone event-driven tra ingestione e analytics;
-- disaccoppiamento dei tempi di elaborazione.
+Persistent storage of historical weather data
 
-### 2.6 `grafana`
-Responsabilità:
-- visualizzazione operativa dati su datasource PostgreSQL/Timescale.
+Event-driven communication between services
 
----
+Data analysis and spatial interpolation
 
-## 3. Flusso dati (end-to-end)
+Visualization through interactive dashboards
 
-1. Lo scheduler invoca periodicamente `ingestRealtimeAndPublish()`.
-2. Il client meteo legge i comuni Piemonte e seleziona i 100 della provincia di Torino.
-3. Le richieste a Open-Meteo sono effettuate in batch (50 + 50) con micro-delay.
-4. Le osservazioni vengono trasformate in entità e persistite nel DB.
-5. Ogni osservazione utile genera un evento realtime su RabbitMQ.
-6. L’analysis-service consuma eventi e aggiorna lo stato analitico.
-7. Il frontend interroga le API e aggiorna mappa, statistiche e grafici.
+The architecture separates clearly the responsibilities of data ingestion, processing and visualization, improving maintainability and scalability.
 
----
+🧩 System Architecture
 
-## 4. Scelte progettuali e motivazioni
+The platform is composed of several independent microservices, each deployed as a container.
 
-### 4.1 Open-Meteo come sorgente
-**Scelta:** uso di Open-Meteo con query multi-punto (lat/lon CSV).  
-**Motivo:** robustezza di accesso + riduzione overhead HTTP rispetto a chiamate singole.
+Main components:
 
-### 4.2 Campionamento a 100 comuni (provincia di Torino)
-**Scelta:** subset stabile e rappresentativo.  
-**Motivo:** bilanciare copertura geografica e limiti di consumo API.
+Service	Technology	Responsibility
+meteo-core-service	Java + Spring Boot	collects weather data from external APIs
+analysis-service	Python + FastAPI	performs data analysis and interpolation
+frontend	React	user interface and data visualization
+meteo-db	PostgreSQL + TimescaleDB	persistent time-series data storage
+RabbitMQ	message broker	asynchronous communication
+Grafana	monitoring	dashboards and metrics visualization
 
-### 4.3 Batch + micro-delay + polling controllato
-**Scelta:** batching da 50, pausa di 5 secondi tra i batch, polling periodico configurabile.  
-**Motivo:** prevenire throttling e mantenere acquisizione continua H24.
+Each component runs inside its own container and is orchestrated through Kubernetes.
 
-### 4.4 Pipeline event-driven
-**Scelta:** DB per storico + RabbitMQ per eventi.  
-**Motivo:** disaccoppiamento tra ingest e analytics, maggiore estendibilità, semplificazione scalabilità orizzontale dei consumer.
+🏗 Architecture Design
+Microservices Architecture
 
-### 4.5 Interpolazione IDW
-**Scelta:** Inverse Distance Weighting per la superficie meteo.  
-**Motivo:** algoritmo semplice, interpretabile, computazionalmente leggero e adatto alla visualizzazione real-time.
+The system follows a microservices approach, where the application is decomposed into independent services that communicate over the network.
 
-### 4.6 Forecast a griglia ridotta
-**Scelta:** 25 punti forecast (5x5) + interpolazione a griglia più fine.  
-**Motivo:** riduzione drastica delle chiamate esterne mantenendo qualità visiva della previsione areale.
+Benefits of this architecture include:
 
----
+independent development and deployment
 
-## 5. Kubernetes (spiegazione tecnica dettagliata)
+better fault isolation
 
-La cartella `04-kubernetes/` contiene manifest modulari e aggregati (`all-manifests.yaml`).
+independent scaling of components
 
-## 5.1 Isolamento con Namespace
-- Namespace dedicato: `group-6`.
-- Tutte le risorse applicative (secret, configmap, workload, service, route) sono isolate nel namespace.
+easier maintainability
 
-**Perché:** riduce collisioni con altri gruppi/progetti su cluster condiviso.
+Each service is responsible for a specific domain of the application, reducing coupling between components.
 
-## 5.2 Configurazione e segreti
-- `Secret`: credenziali DB, RabbitMQ, Grafana.
-- `ConfigMap`: script init DB e provisioning Grafana.
+Event-Driven Communication
 
-**Perché:** separazione tra immagine e runtime config, migliore mantenibilità e sicurezza base.
+Services communicate using RabbitMQ, implementing an event-driven architecture.
 
-## 5.3 StatefulSet per componenti con stato
-- `meteo-db` e `rabbitmq` in `StatefulSet` + volumi persistenti.
-- PVC con storage class `csi-cinder-fast`.
+Instead of tightly coupling services through synchronous calls, events are published to a message queue and consumed asynchronously.
 
-**Perché:** identità stabile dei pod, persistenza dati e recovery coerente.
+Advantages:
 
-## 5.4 Deployment per componenti stateless
-- `meteo-core`, `analysis-service`, `frontend`, `grafana` in `Deployment`.
+loose coupling between services
 
-**Perché:** rollout semplice, gestione repliche e aggiornamenti progressivi.
+buffering of workload spikes
 
-## 5.5 Strategia repliche
-- `meteo-core`: **1 replica** (scelta intenzionale).
-- `analysis-service`: **2 repliche**.
-- `frontend`: 1 replica.
+improved resilience
 
-**Perché questa scelta è importante:**
-- con più repliche del core si rischia polling duplicato → doppio traffico verso API esterna e duplicazione ingest;
-- analysis-service può scalare in consumo/elaborazione senza impattare il budget API.
+better scalability
 
-## 5.6 Health probes conservative
-- Readiness/Liveness con initial delay più alto su servizi lenti all’avvio (`rabbitmq`, `meteo-core`, `frontend`).
+Example flow:
 
-**Perché:** evita restart-loop in ambienti con cold-start o risorse condivise.
+Weather API → Core Service → RabbitMQ → Analysis Service → Database
+🐳 Containerization with Docker
 
-## 5.7 Service discovery interno
-- Ogni workload espone un `Service` ClusterIP.
-- Comunicazione interna via DNS Kubernetes (`service-name:port`).
+All services are packaged as Docker containers.
 
-**Perché:** stabilità endpoint interni e disaccoppiamento dagli IP dei pod.
+Docker provides:
 
-## 5.8 Esposizione esterna con Gateway API + HTTPRoute
-Routing path-based sotto prefisso comune:
-- `/group-6` → frontend
-- `/group-6/core` → meteo-core
-- `/group-6/analysis` → analysis-service
+consistent runtime environments
 
-Con `URLRewrite` sui backend per rimuovere il prefisso.
+isolation of dependencies
 
-**Perché:** compatibilità con gateway condiviso multi-team e URL unificata lato utente.
+portability across systems
 
-## 5.9 Frontend path-aware
-Variabili ambiente principali:
-- `PUBLIC_URL=/group-6`
-- `REACT_APP_CORE_BASE=/group-6/core`
-- `REACT_APP_ANALYSIS_BASE=/group-6/analysis`
+simplified deployment
 
-**Perché:** corretto caricamento asset/static e chiamate API quando l’app non è deployata alla root `/`.
+Each microservice has its own Docker image, enabling independent deployment and updates.
 
-## 5.10 Grafana provisioning as-code
-Datasource e dashboard provider vengono montati da ConfigMap.
+☸️ Deployment with Kubernetes
 
-**Perché:** ambiente monitorabile in modo riproducibile senza setup manuale post-deploy.
+The platform is orchestrated using Kubernetes, which manages container deployment, networking and scaling.
 
----
+Key Kubernetes resources used in this project include:
 
-## 6. Struttura repository
+Resource	Purpose
+Pod	smallest deployable unit
+Deployment	manages stateless service replicas
+StatefulSet	manages stateful components
+Service	provides stable networking endpoints
+Namespace	logical isolation of resources
 
-```text
-meteoplatform/
-├── meteo-core-service/        # Ingestion + persistenza + publish eventi
-├── analysis-service/          # Consumer RabbitMQ + endpoint analytics/forecast
-├── frontend/                  # UI geospaziale React/Leaflet
-├── db/init.sql                # Schema + hypertable Timescale
-├── grafana/provisioning/      # Config datasource/dashboard
-├── docker-compose.yml         # Esecuzione locale completa
-└── 04-kubernetes/             # Manifest Kubernetes
+This architecture allows the platform to run in a clustered and scalable environment.
+
+⚙️ Configuration Management
+
+Application configuration is externalized using Kubernetes resources:
+
+ConfigMap
+
+Used for non-sensitive configuration values, such as:
+
+application parameters
+
+environment variables
+
+service configuration
+
+This allows the same container image to run in multiple environments.
+
+Secrets
+
+Sensitive information such as:
+
+database credentials
+
+API tokens
+
+access keys
+
+is stored using Kubernetes Secrets, avoiding exposure in source code or container images.
+
+💾 Persistent Storage
+
+The platform stores meteorological data using PostgreSQL with TimescaleDB, which is optimized for time-series workloads.
+
+Kubernetes persistent storage is managed through:
+
+PersistentVolume
+
+PersistentVolumeClaim
+
+This ensures that data remains available even if containers are restarted or rescheduled.
+
+🔄 Data Flow
+
+The main workflow of the platform is the following:
+
+The Core Service periodically queries external weather APIs.
+
+Retrieved data is normalized and stored in the database.
+
+An event is published to RabbitMQ.
+
+The Analysis Service consumes the event and performs calculations.
+
+Results are exposed via REST APIs.
+
+The Frontend visualizes the data through charts and maps.
+
+📊 Data Visualization
+
+The frontend application provides interactive visualization tools using:
+
+Leaflet for geographic maps
+
+Recharts for time-series charts
+
+Features include:
+
+weather station visualization
+
+spatial interpolation maps
+
+historical data comparison
+
+interactive metric selection
+
+🛡 Resilience
+
+The system is designed to be resilient to failures by leveraging several architectural mechanisms.
+
+Service Isolation
+
+Each microservice runs independently, preventing failures from propagating across the entire system.
+
+Message Queue Buffering
+
+RabbitMQ decouples producers and consumers.
+
+If one service becomes temporarily unavailable:
+
+messages remain in the queue
+
+consumers can process them later
+
+This prevents data loss and improves system reliability.
+
+Container Restart Policies
+
+Kubernetes automatically restarts failed containers, ensuring continuous service availability.
+
+📈 Scalability
+
+The architecture is designed to scale horizontally.
+
+Horizontal Scaling
+
+Stateless services such as:
+
+API services
+
+analysis services
+
+frontend
+
+can be scaled by increasing the number of replicas using Kubernetes Deployments.
+
+Independent Scaling
+
+Because services are independent, each component can scale separately depending on workload.
+
+Example:
+
+heavy data ingestion → scale core service
+
+heavy analytics → scale analysis service
+
+This avoids scaling the entire system unnecessarily.
+
+🧠 Kubernetes Scheduling
+
+Kubernetes automatically decides where to run containers using the scheduler.
+
+The scheduler selects nodes based on:
+
+available resources (CPU, memory)
+
+node labels
+
+scheduling policies
+
+Advanced scheduling strategies can include:
+
+Node Affinity
+
+Allows services to run on specific nodes.
+
+Example:
+
+database pods on nodes with SSD storage
+
+compute workloads on high-CPU nodes
+
+Taints and Tolerations
+
+Nodes can be reserved for specific workloads.
+
+Example:
+
+GPU nodes reserved for ML tasks
+
+infrastructure nodes dedicated to monitoring services
+
+This mechanism ensures efficient resource allocation within the cluster.
+
+🔍 Monitoring
+
+The platform integrates Grafana dashboards for monitoring and data visualization.
+
+Grafana provides:
+
+real-time data visualization
+
+operational metrics
+
+system observability
+
+This helps detect anomalies and analyze system behavior.
+
+🚀 Future Improvements
+
+Potential extensions of the platform include:
+
+autoscaling using Kubernetes HPA
+
+distributed tracing
+
+caching of analytical results
+
+streaming analytics with Kafka
+
+machine learning forecasting models
+
+🧑‍💻 Technologies Used
+
+Backend
+
+Spring Boot
+
+FastAPI
+
+Python
+
+Java
+
+Infrastructure
+
+Docker
+
+Kubernetes
+
+RabbitMQ
+
+Database
+
+PostgreSQL
+
+TimescaleDB
+
+Frontend
+
+React
+
+Leaflet
+
+Recharts
+
+Monitoring
+
+Grafana
+
+📚 Educational Context
+
+This project was developed as part of a Cloud Computing and Microservices course, with the objective of demonstrating practical usage of:
+
+containerization
+
+distributed systems
+
+microservices architecture
+
+event-driven communication
+
+Kubernetes orchestration
+
+📦 Repository Structure
+
+Example structure:
+
+meteo-platform
+│
+├── core-service
+├── analysis-service
+├── frontend
+├── database
+├── kubernetes
+├── docker
+└── monitoring
