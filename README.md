@@ -33,41 +33,6 @@ Il sistema è composto da microservizi indipendenti che comunicano in modo asinc
 | **RabbitMQ** | Message Broker | Gestione della comunicazione asincrona |
 | **Grafana** | Monitoring | Dashboard di monitoraggio operativo |
 
-### 🏗 Diagramma Architetturale
-
-```mermaid
-flowchart LR
-    subgraph Client
-        U[Utente]
-        FE[Frontend React]
-    end
-
-    subgraph Kubernetes_Cluster [Kubernetes Cluster]
-        CORE[meteo-core-service Spring Boot]
-        AN[analysis-service FastAPI]
-        RMQ[RabbitMQ]
-        DB[(PostgreSQL + TimescaleDB)]
-        GRAF[Grafana]
-    end
-
-    EXT[API Meteo Esterne Open-Meteo]
-
-    U --> FE
-    FE -->|REST API| CORE
-    FE -->|REST API| AN
-
-    CORE -->|Raccolta dati| EXT
-    CORE -->|Salvataggio dati| DB
-    CORE -->|Pubblica evento| RMQ
-
-    RMQ -->|Consumo eventi| AN
-    AN -->|Salvataggio risultati| DB
-
-    GRAF -->|Dashboard| DB
-
-
----
-
 ## 🐳 Containerizzazione con Docker
 
 Tutti i servizi sono distribuiti come container **Docker**. Questo approccio permette di:
