@@ -42,7 +42,6 @@ Le richeste esterne arrivano al `Gateway` (esposto in LoadBalancer/NodePort) e v
 * Le chiamate API a `/group-6/api/v1/meteo/` vengono trasparentemente inoltrate (con path rewrite) al **meteo-core**.
 * Le chiamate API a `/group-6/api/v1/analysis/` vengono instradate verso l'**analysis-service** (FastAPI).
 
-Questo approccio offre routing avanzato di Layer 7 senza dipendere da annotazioni complesse come su Nginx-Ingress.
 
 ---
 
