@@ -64,3 +64,65 @@ flowchart LR
     AN -->|Salvataggio risultati| DB
 
     GRAF -->|Dashboard| DB
+
+
+---
+
+## 🐳 Containerizzazione con Docker
+
+Tutti i servizi sono distribuiti come container **Docker**. Questo approccio permette di:
+* **Garantire ambienti di esecuzione consistenti** tra sviluppo e produzione.
+* **Isolare le dipendenze** dei servizi (es. Java per il core, Python per l'analisi).
+* **Facilitare il deployment** e migliorare la portabilità tra sistemi diversi.
+* **Gestire deploy e aggiornamenti indipendenti** per ogni microservizio.
+
+---
+
+## ☸️ Orchestrazione con Kubernetes
+
+Il sistema è orchestrato tramite **Kubernetes**, che gestisce il ciclo di vita dei container attraverso diverse risorse:
+
+| Risorsa | Descrizione |
+| :--- | :--- |
+| **Pod** | Unità minima di esecuzione dei container. |
+| **Deployment** | Gestione delle repliche e degli aggiornamenti dei servizi. |
+| **StatefulSet** | Gestione dei servizi con stato (come il Database). |
+| **Service** | Endpoint di rete stabili per il networking tra pod. |
+| **Namespace** | Isolamento logico delle risorse nel cluster. |
+
+### ⚙️ Gestione della configurazione
+La configurazione è separata dal codice per garantire sicurezza e flessibilità:
+* **ConfigMap**: Utilizzate per parametri applicativi e variabili d'ambiente non sensibili.
+* **Secrets**: Utilizzati per credenziali del database, token API e chiavi di accesso.
+
+### 💾 Storage persistente
+Utilizziamo **PersistentVolume (PV)** e **PersistentVolumeClaim (PVC)** per garantire che i dati meteorologici salvati in *PostgreSQL/TimescaleDB* siano persistenti e non vadano persi in caso di riavvio o ripianificazione dei pod.
+
+---
+
+## 🔄 Flusso dei Dati (Pipeline)
+
+Il percorso del dato segue una pipeline strutturata:
+
+1.  **Ingestion**: Il *Core Service* interroga periodicamente le API esterne.
+2.  **Storage**: I dati vengono normalizzati e salvati nel database.
+3.  **Messaging**: Il servizio pubblica un evento su **RabbitMQ**.
+4.  **Processing**: L’*Analysis Service* consuma l’evento, esegue l'interpolazione e salva i risultati.
+5.  **Delivery**: Il *Frontend* visualizza i dati tramite mappe (**Leaflet**) e grafici (**Recharts**).
+
+---
+
+## 🛡 Resilienza e Scalabilità
+
+* **Resilienza**: Kubernetes garantisce il riavvio automatico dei container. L'uso di **RabbitMQ** disaccoppia i servizi: se l'Analysis Service è temporaneamente offline, i messaggi rimangono in coda senza perdita di dati.
+* **Scalabilità Orizzontale**: I servizi *stateless* possono essere scalati aumentando il numero di repliche in base al carico (es. più istanze di Analysis Service per calcoli intensivi).
+* **Scheduling Avanzato**: Utilizzo di **Node Affinity** per eseguire i database su nodi con storage veloce e i servizi di calcolo su nodi con maggiore potenza di calcolo (CPU).
+
+---
+
+## 🔍 Monitoraggio
+
+Il sistema integra **Grafana** per:
+* Il monitoraggio costante delle **metriche operative** (health check dei servizi).
+* La **visualizzazione rapida** dei dati meteorologici archiviati.
+* Fornire una visione completa e centralizzata della salute dell'intera piattaforma.
