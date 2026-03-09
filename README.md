@@ -1,81 +1,58 @@
 # 🌦️ Meteo Platform
 
-## Piattaforma cloud-native per raccolta, analisi e visualizzazione di dati meteorologici
+### Piattaforma cloud-native per raccolta, analisi e visualizzazione di dati meteorologici
 
-Questo progetto implementa una **piattaforma distribuita per la raccolta, elaborazione e visualizzazione di dati meteorologici in tempo reale**, sviluppata seguendo i principi delle **architetture a microservizi** e delle applicazioni **cloud-native**.
-
-Il sistema dimostra come progettare una piattaforma **scalabile, resiliente e containerizzata**, utilizzando tecnologie moderne come:
-
-- Docker
-- Kubernetes
-- Spring Boot
-- FastAPI
-- RabbitMQ
-- PostgreSQL / TimescaleDB
-- React
-- Grafana
+Questa piattaforma distribuita è progettata per la **raccolta, l'elaborazione e la visualizzazione di dati meteorologici in tempo reale**. Il progetto è stato sviluppato seguendo i principi delle **architetture a microservizi** e delle applicazioni **cloud-native**, dimostrando come costruire un sistema scalabile, resiliente e completamente containerizzato.
 
 ---
 
-# 🎯 Obiettivi del progetto
+## 🎯 Obiettivi del Progetto
 
-L’obiettivo del progetto è realizzare una **pipeline completa di gestione dei dati meteorologici**, composta da:
+L’obiettivo è realizzare una **pipeline completa di data management**, strutturata in:
 
-1. **Acquisizione dei dati** da API meteorologiche esterne
-2. **Persistenza dei dati storici**
-3. **Comunicazione event-driven tra servizi**
-4. **Analisi e interpolazione dei dati**
-5. **Visualizzazione interattiva**
+1.  **Acquisizione**: Recupero dati da API meteorologiche esterne (Open-Meteo).
+2.  **Persistenza**: Storage ottimizzato per serie temporali.
+3.  **Comunicazione**: Disaccoppiamento dei servizi tramite architettura event-driven.
+4.  **Analisi**: Elaborazione e interpolazione dei dati raccolti.
+5.  **Visualizzazione**: Dashboard interattive per l'utente finale.
 
-L’architettura separa chiaramente i livelli di:
-
-- raccolta dati
-- elaborazione
-- visualizzazione
-
-migliorando **manutenibilità, scalabilità e modularità del sistema**.
+Questa separazione dei livelli (raccolta, elaborazione, visualizzazione) garantisce **manutenibilità, scalabilità e modularità**.
 
 ---
 
-# 🧩 Architettura del sistema
+## 🧩 Architettura del Sistema
 
-La piattaforma è composta da diversi **microservizi indipendenti**, ciascuno responsabile di una specifica funzionalità.
+Il sistema è composto da microservizi indipendenti che comunicano in modo asincrono.
 
 | Servizio | Tecnologia | Ruolo |
-|--------|--------|--------|
-| meteo-core-service | Java + Spring Boot | acquisizione dati meteorologici |
-| analysis-service | Python + FastAPI | analisi e interpolazione dei dati |
-| frontend | React | interfaccia utente |
-| meteo-db | PostgreSQL + TimescaleDB | storage dei dati meteorologici |
-| RabbitMQ | message broker | comunicazione asincrona |
-| Grafana | monitoring | dashboard e visualizzazione dati |
+| :--- | :--- | :--- |
+| **meteo-core-service** | Java + Spring Boot | Core logic e acquisizione dati esterni |
+| **analysis-service** | Python + FastAPI | Analisi statistica e interpolazione dati |
+| **frontend** | React | Interfaccia utente interattiva |
+| **meteo-db** | PostgreSQL + TimescaleDB | Database relazionale ottimizzato per time-series |
+| **RabbitMQ** | Message Broker | Gestione della comunicazione asincrona |
+| **Grafana** | Monitoring | Dashboard di monitoraggio operativo |
 
-Tutti i servizi sono **containerizzati con Docker** e orchestrati tramite **Kubernetes**.
-
----
-
-# 🏗 Diagramma Architetturale
+### 🏗 Diagramma Architetturale
 
 ```mermaid
 flowchart LR
-
     subgraph Client
         U[Utente]
-        FE[Frontend<br/>React]
+        FE[Frontend React]
     end
 
-    subgraph Kubernetes Cluster
-        CORE[meteo-core-service<br/>Spring Boot]
-        AN[analysis-service<br/>FastAPI]
+    subgraph Kubernetes_Cluster [Kubernetes Cluster]
+        CORE[meteo-core-service Spring Boot]
+        AN[analysis-service FastAPI]
         RMQ[RabbitMQ]
         DB[(PostgreSQL + TimescaleDB)]
         GRAF[Grafana]
     end
 
-    EXT[API Meteo Esterne<br/>Open-Meteo]
+    EXT[API Meteo Esterne Open-Meteo]
 
     U --> FE
-
     FE -->|REST API| CORE
     FE -->|REST API| AN
 
@@ -86,4 +63,4 @@ flowchart LR
     RMQ -->|Consumo eventi| AN
     AN -->|Salvataggio risultati| DB
 
-    GRAF -->|Dashboard e monitoraggio| DB
+    GRAF -->|Dashboard| DB
