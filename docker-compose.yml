@@ -1,0 +1,76 @@
+version: "3.9"
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: meteo-db
+    environment:
+      POSTGRES_DB: meteo
+      POSTGRES_USER: meteo
+      POSTGRES_PASSWORD: meteo
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  meteo-core:
+    build: ./meteo-core-service
+    container_name: meteo-core
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_TOOL_OPTIONS: -Djava.net.preferIPv4Stack=true
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/meteo
+      SPRING_DATASOURCE_USERNAME: meteo
+      SPRING_DATASOURCE_PASSWORD: meteo
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    depends_on:
+      - db
+      - rabbitmq
+    ports:
+      - "8080:8080"
+
+  analysis-service:
+    build: ./analysis-service
+    container_name: analysis-service
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      QUEUE_NAME: meteo.realtime
+      CORE_API_BASE: http://meteo-core:8080
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - rabbitmq
+      - meteo-core
+      - redis
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    environment:
+      REACT_APP_CORE_BASE: http://localhost:8080
+      REACT_APP_ANALYSIS_BASE: http://localhost:8000
+    depends_on:
+      - meteo-core
+      - analysis-service
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
