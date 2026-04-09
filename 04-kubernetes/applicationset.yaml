@@ -20,7 +20,7 @@ spec:
         app.kubernetes.io/managed-by: argocd
     spec:
       # Ho aggiornato il progetto a "meteopiemonte" come richiesto
-      project: meteopiemonte
+      project: alessandro
       source:
         repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
         targetRevision: iac
