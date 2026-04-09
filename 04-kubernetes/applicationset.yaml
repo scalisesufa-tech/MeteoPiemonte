@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: meteopiemonte-microservices
+  namespace: argocd
+spec:
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
+        revision: iac
+        directories:
+          - path: "04-kubernetes/*"
+  template:
+    metadata:
+      name: "{{path.basename}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: meteopiemonte
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      # Se hai sistemato i permessi di cui parlavamo usa "alessandro", altrimenti usa "default"
+      project: default
+      source:
+        repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
+        targetRevision: iac
+        path: "{{path}}"
+        directory:
+          recurse: true
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: group-6
+      syncPolicy:
+        automated:
+          prune: true
+        syncOptions:
+          - ApplyOutOfSyncOnly=true
+          - ServerSideApply=true
