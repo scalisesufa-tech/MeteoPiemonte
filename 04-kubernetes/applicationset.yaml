@@ -19,8 +19,8 @@ spec:
         app.kubernetes.io/part-of: meteopiemonte
         app.kubernetes.io/managed-by: argocd
     spec:
-      # Se hai sistemato i permessi di cui parlavamo usa "alessandro", altrimenti usa "default"
-      project: default
+      # Ho aggiornato il progetto a "meteopiemonte" come richiesto
+      project: meteopiemonte
       source:
         repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
         targetRevision: iac
