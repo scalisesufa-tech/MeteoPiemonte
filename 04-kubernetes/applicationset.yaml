@@ -10,7 +10,7 @@ spec:
         repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
         revision: iac
         directories:
-          - path: "04-kubernetes"
+          - path: "04-kubernetes/*"
   template:
     metadata:
       name: "meteopiemonte-{{path.basename}}"
