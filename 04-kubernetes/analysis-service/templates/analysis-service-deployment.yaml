@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "analysis-service.fullname" . }}
+  name: '{{ include "analysis-service.fullname" . }}'
   labels:
-    app: {{ include "analysis-service.fullname" . }}
+    app: '{{ include "analysis-service.fullname" . }}'
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "analysis-service.fullname" . }}
+      app: '{{ include "analysis-service.fullname" . }}'
   template:
     metadata:
       labels:
-        app: {{ include "analysis-service.fullname" . }}
+        app: '{{ include "analysis-service.fullname" . }}'
     spec:
       containers:
-      - name: {{ include "analysis-service.fullname" . }}
+      - name: '{{ include "analysis-service.fullname" . }}'
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: Always
         ports:

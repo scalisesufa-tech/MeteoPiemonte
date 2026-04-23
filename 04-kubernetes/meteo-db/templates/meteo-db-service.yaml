@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "meteo-db.fullname" . }}
+  name: '{{ include "meteo-db.fullname" . }}'
 spec:
   selector:
-    app: {{ include "meteo-db.fullname" . }}
+    app: '{{ include "meteo-db.fullname" . }}'
   ports:
   - port: 5432
     targetPort: 5432

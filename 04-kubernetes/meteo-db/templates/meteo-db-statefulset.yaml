@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "meteo-db.fullname" . }}
+  name: '{{ include "meteo-db.fullname" . }}'
   labels:
-    app: {{ include "meteo-db.fullname" . }}
+    app: '{{ include "meteo-db.fullname" . }}'
 spec:
-  serviceName: {{ include "meteo-db.fullname" . }}
+  serviceName: '{{ include "meteo-db.fullname" . }}'
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "meteo-db.fullname" . }}
+      app: '{{ include "meteo-db.fullname" . }}'
   template:
     metadata:
       labels:
-        app: {{ include "meteo-db.fullname" . }}
+        app: '{{ include "meteo-db.fullname" . }}'
     spec:
       containers:
       - name: timescaledb

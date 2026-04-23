@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "frontend.fullname" . }}
+  name: '{{ include "frontend.fullname" . }}'
   labels:
-    app: {{ include "frontend.fullname" . }}
+    app: '{{ include "frontend.fullname" . }}'
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "frontend.fullname" . }}
+      app: '{{ include "frontend.fullname" . }}'
   template:
     metadata:
       labels:
-        app: {{ include "frontend.fullname" . }}
+        app: '{{ include "frontend.fullname" . }}'
     spec:
       containers:
-      - name: {{ include "frontend.fullname" . }}
+      - name: '{{ include "frontend.fullname" . }}'
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: Always
         ports:

@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "grafana.fullname" . }}
+  name: '{{ include "grafana.fullname" . }}'
   labels:
-    app: {{ include "grafana.fullname" . }}
+    app: '{{ include "grafana.fullname" . }}'
 spec:
   strategy:
     type: Recreate
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "grafana.fullname" . }}
+      app: '{{ include "grafana.fullname" . }}'
   template:
     metadata:
       labels:
-        app: {{ include "grafana.fullname" . }}
+        app: '{{ include "grafana.fullname" . }}'
     spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
       containers:
-      - name: {{ include "grafana.fullname" . }}
+      - name: '{{ include "grafana.fullname" . }}'
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
         - containerPort: 3000

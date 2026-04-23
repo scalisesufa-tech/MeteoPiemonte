@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "meteo-core.fullname" . }}
+  name: '{{ include "meteo-core.fullname" . }}'
   labels:
-    app: {{ include "meteo-core.fullname" . }}
+    app: '{{ include "meteo-core.fullname" . }}'
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "meteo-core.fullname" . }}
+      app: '{{ include "meteo-core.fullname" . }}'
   template:
     metadata:
       labels:
-        app: {{ include "meteo-core.fullname" . }}
+        app: '{{ include "meteo-core.fullname" . }}'
     spec:
       containers:
-      - name: {{ include "meteo-core.fullname" . }}
+      - name: '{{ include "meteo-core.fullname" . }}'
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: Always
         ports:

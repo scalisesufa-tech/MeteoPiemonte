@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "grafana.fullname" . }}
+  name: '{{ include "grafana.fullname" . }}'
 spec:
   selector:
-    app: {{ include "grafana.fullname" . }}
+    app: '{{ include "grafana.fullname" . }}'
   ports:
   - port: 3000
     targetPort: 3000
