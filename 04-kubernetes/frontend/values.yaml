@@ -1,0 +1,8 @@
+replicaCount: 1
+
+image:
+  repository: scalisufa/frontend
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: "frontend"

@@ -1,0 +1,8 @@
+replicaCount: 2
+
+image:
+  repository: scalisufa/meteo-core
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: "meteo-core"

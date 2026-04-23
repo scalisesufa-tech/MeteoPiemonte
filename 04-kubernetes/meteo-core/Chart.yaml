@@ -1,0 +1,6 @@
+apiVersion: v2
+name: meteo-core
+description: A Helm chart for meteo-core
+type: application
+version: 0.1.0
+appVersion: "latest"

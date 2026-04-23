@@ -1,0 +1,8 @@
+replicaCount: 1
+
+image:
+  repository: timescale/timescaledb
+  tag: "latest-pg14"
+
+nameOverride: ""
+fullnameOverride: "meteo-db"

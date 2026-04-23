@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "rabbitmq.fullname" . }}
+  labels:
+    app: {{ include "rabbitmq.fullname" . }}
+spec:
+  serviceName: {{ include "rabbitmq.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "rabbitmq.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "rabbitmq.fullname" . }}
+    spec:
+      containers:
+      - name: {{ include "rabbitmq.fullname" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 5672
+          name: amqp
+        - containerPort: 15672
+          name: mgmt
+        envFrom:
+        - secretRef:
+            name: rabbitmq-secret
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/rabbitmq
+        readinessProbe:
+          tcpSocket:
+            port: 5672
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 5672
+          initialDelaySeconds: 90
+          periodSeconds: 10
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: csi-cinder-fast
+      resources:
+        requests:
+          storage: 5Gi

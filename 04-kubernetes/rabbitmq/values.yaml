@@ -1,0 +1,8 @@
+replicaCount: 1
+
+image:
+  repository: rabbitmq
+  tag: "3-management"
+
+nameOverride: ""
+fullnameOverride: "rabbitmq"

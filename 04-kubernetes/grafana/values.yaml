@@ -1,0 +1,8 @@
+replicaCount: 1
+
+image:
+  repository: grafana/grafana
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: "grafana"

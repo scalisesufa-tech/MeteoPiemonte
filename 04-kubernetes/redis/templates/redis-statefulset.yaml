@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "redis.fullname" . }}
+  labels:
+    app: {{ include "redis.fullname" . }}
+spec:
+  serviceName: {{ include "redis.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "redis.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "redis.fullname" . }}
+    spec:
+      containers:
+      - name: {{ include "redis.fullname" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 6379
+          name: {{ include "redis.fullname" . }}

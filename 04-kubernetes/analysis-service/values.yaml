@@ -1,0 +1,8 @@
+replicaCount: 2
+
+image:
+  repository: scalisufa/analysis-service
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: "analysis-service"
