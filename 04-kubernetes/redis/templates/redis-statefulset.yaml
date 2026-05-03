@@ -1,23 +1,34 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: '{{ include "redis.fullname" . }}'
+  name: {{ include "redis.fullname" . }}
   labels:
-    app: '{{ include "redis.fullname" . }}'
+    {{- include "redis.labels" . | nindent 4 }}
 spec:
-  serviceName: '{{ include "redis.fullname" . }}'
-  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "redis.fullname" . }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      app: '{{ include "redis.fullname" . }}'
+      {{- include "redis.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: '{{ include "redis.fullname" . }}'
+        {{- include "redis.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - name: '{{ include "redis.fullname" . }}'
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        ports:
-        - containerPort: 6379
-          name: '{{ include "redis.fullname" . }}'
+        - name: {{ .Chart.Name }}
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds | default 10 }}
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds | default 10 }}

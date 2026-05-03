@@ -1,0 +1,32 @@
+apiVersion: v2
+name: meteo-umbrella
+description: Umbrella chart for MeteoPiemonte microservices
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: alessandroscalise
+    email: alessandro.scalise@example.com
+
+dependencies:
+  - name: frontend
+    version: 0.1.0
+    repository: "file://../frontend"
+  - name: meteo-core
+    version: 0.1.0
+    repository: "file://../meteo-core"
+  - name: meteo-db
+    version: 0.1.0
+    repository: "file://../meteo-db"
+  - name: analysis-service
+    version: 0.1.0
+    repository: "file://../analysis-service"
+  - name: grafana
+    version: 0.1.0
+    repository: "file://../grafana"
+  - name: rabbitmq
+    version: 0.1.0
+    repository: "file://../rabbitmq"
+  - name: redis
+    version: 0.1.0
+    repository: "file://../redis"

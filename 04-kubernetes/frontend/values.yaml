@@ -1,8 +1,36 @@
+# Default values for frontend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 replicaCount: 1
 
 image:
   repository: scalisufa/frontend
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
 nameOverride: ""
 fullnameOverride: "frontend"
+
+env:
+  REACT_APP_CORE_BASE: "/group-6/core"
+  REACT_APP_ANALYSIS_BASE: "/group-6/analysis"
+
+service:
+  type: ClusterIP
+  port: 3000
+
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+route:
+  enabled: true
+  gatewayName: shared-gateway
+  gatewayNamespace: default
+  pathPrefix: /group-6

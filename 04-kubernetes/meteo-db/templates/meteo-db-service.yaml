@@ -1,11 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: '{{ include "meteo-db.fullname" . }}'
+  name: {{ include "meteo-db.fullname" . }}
+  labels:
+    {{- include "meteo-db.labels" . | nindent 4 }}
 spec:
-  selector:
-    app: '{{ include "meteo-db.fullname" . }}'
+  type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
-  - port: 5432
-    targetPort: 5432
-    name: postgres
+    - port: {{ .Values.service.port | default 5432 }}
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "meteo-db.selectorLabels" . | nindent 4 }}

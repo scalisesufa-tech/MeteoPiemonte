@@ -1,6 +1,13 @@
 apiVersion: v2
 name: meteo-db
-description: A Helm chart for meteo-db
+description: PostgreSQL database with TimescaleDB extension for MeteoPiemonte.
 type: application
 version: 0.1.0
 appVersion: "latest-pg14"
+keywords:
+  - meteopiemonte
+  - database
+  - postgresql
+  - timescaledb
+maintainers:
+  - name: alessandroscalise

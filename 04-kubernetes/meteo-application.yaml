@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: meteopiemonte-stack
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: meteopiemonte
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: alessandro
+  source:
+    repoURL: https://github.com/scalisesufa-tech/MeteoPiemonte.git
+    targetRevision: iac
+    path: 04-kubernetes/meteo-umbrella
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: group-6
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+      - CreateNamespace=true

@@ -1,8 +1,37 @@
-replicaCount: 2
+# Default values for analysis-service.
+
+replicaCount: 1
 
 image:
   repository: scalisufa/analysis-service
+  pullPolicy: IfNotPresent
   tag: "latest"
 
 nameOverride: ""
 fullnameOverride: "analysis-service"
+
+env:
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  QUEUE_NAME: "meteo.realtime"
+  CORE_API_BASE: "http://meteo-core:8080"
+  REDIS_URL: "redis://redis:6379/0"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+probes:
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    path: /health
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    path: /health
+
+route:
+  enabled: true
+  gatewayName: shared-gateway
+  gatewayNamespace: default
+  pathPrefix: /group-6/analysis

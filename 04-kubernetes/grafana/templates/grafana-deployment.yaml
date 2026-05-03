@@ -1,60 +1,64 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ include "grafana.fullname" . }}'
+  name: {{ include "grafana.fullname" . }}
   labels:
-    app: '{{ include "grafana.fullname" . }}'
+    {{- include "grafana.labels" . | nindent 4 }}
 spec:
   strategy:
     type: Recreate
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      app: '{{ include "grafana.fullname" . }}'
+      {{- include "grafana.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: '{{ include "grafana.fullname" . }}'
+        {{- include "grafana.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         fsGroup: 472
         runAsUser: 472
       containers:
-      - name: '{{ include "grafana.fullname" . }}'
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        ports:
-        - containerPort: 3000
-          name: http
-        envFrom:
-        - secretRef:
-            name: grafana-admin-secret
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/grafana
-        - name: provisioning
-          mountPath: /etc/grafana/provisioning/dashboards/dashboard.yml
-          subPath: dashboard.yml
-          readOnly: true
-        - name: provisioning
-          mountPath: /etc/grafana/provisioning/datasources/datasource.yml
-          subPath: datasource.yml
-          readOnly: true
-        readinessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
+        - name: {{ .Chart.Name }}
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: {{ include "grafana.fullname" . }}-admin-secret
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/grafana
+            - name: provisioning-dashboards
+              mountPath: /etc/grafana/provisioning/dashboards/dashboard.yml
+              subPath: dashboard.yml
+              readOnly: true
+            - name: provisioning-datasources
+              mountPath: /etc/grafana/provisioning/datasources/datasource.yml
+              subPath: datasource.yml
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds | default 10 }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds | default 10 }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds | default 10 }}
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: grafana-data
-      - name: provisioning
-        configMap:
-          name: grafana-provisioning
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "grafana.fullname" . }}-data
+        - name: provisioning-dashboards
+          configMap:
+            name: {{ include "grafana.fullname" . }}-provisioning
+        - name: provisioning-datasources
+          configMap:
+            name: {{ include "grafana.fullname" . }}-provisioning

@@ -1,6 +1,12 @@
 apiVersion: v2
 name: analysis-service
-description: A Helm chart for analysis-service
+description: Analysis microservice for MeteoPiemonte, processing real-time weather data.
 type: application
 version: 0.1.0
 appVersion: "latest"
+keywords:
+  - meteopiemonte
+  - analysis
+  - python
+maintainers:
+  - name: alessandroscalise

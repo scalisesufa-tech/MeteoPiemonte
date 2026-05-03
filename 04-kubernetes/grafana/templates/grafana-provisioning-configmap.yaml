@@ -1,12 +1,33 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-provisioning
+  name: {{ include "grafana.fullname" . }}-provisioning
+  labels:
+    {{- include "grafana.labels" . | nindent 4 }}
 data:
-  datasource.yml: "apiVersion: 1\ndatasources:\n  - name: TimescaleDB\n\
-    \    type: postgres\n    access: proxy\n    url: meteo-db:5432\n    database: meteo\n\
-    \    user: meteo\n    secureJsonData:\n      password: meteo\n    jsonData:\n\
-    \      sslmode: \"disable\"\n      postgresVersion: 1400\n      timescaledb: true\n"
-  dashboard.yml: "apiVersion: 1\nproviders:\n  - name: 'default'\n    orgId:\
-    \ 1\n    folder: ''\n    type: file\n    disableDeletion: false\n    editable:\
-    \ true\n    options:\n      path: /etc/grafana/provisioning/dashboards\n"
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: TimescaleDB
+        type: postgres
+        access: proxy
+        url: {{ required "datasource.url is required" .Values.datasource.url }}
+        database: {{ required "datasource.database is required" .Values.datasource.database }}
+        user: {{ required "datasource.user is required" .Values.datasource.user }}
+        secureJsonData:
+          password: {{ required "datasource.password is required" .Values.datasource.password }}
+        jsonData:
+          sslmode: "disable"
+          postgresVersion: 1400
+          timescaledb: true
+  dashboard.yml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana/provisioning/dashboards

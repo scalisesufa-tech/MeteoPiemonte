@@ -1,44 +1,45 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ include "analysis-service.fullname" . }}'
+  name: {{ include "analysis-service.fullname" . }}
   labels:
-    app: '{{ include "analysis-service.fullname" . }}'
+    {{- include "analysis-service.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      app: '{{ include "analysis-service.fullname" . }}'
+      {{- include "analysis-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: '{{ include "analysis-service.fullname" . }}'
+        {{- include "analysis-service.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - name: '{{ include "analysis-service.fullname" . }}'
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-          name: http
-        env:
-        - name: RABBITMQ_URL
-          value: amqp://guest:guest@rabbitmq:5672/
-        - name: QUEUE_NAME
-          value: meteo.realtime
-        - name: CORE_API_BASE
-          value: http://meteo-core:8080
-        - name: REDIS_URL
-          value: redis://redis:6379/0
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 10
+        - name: {{ .Chart.Name }}
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: RABBITMQ_URL
+              value: {{ required "env.RABBITMQ_URL is required" .Values.env.RABBITMQ_URL | quote }}
+            - name: QUEUE_NAME
+              value: {{ required "env.QUEUE_NAME is required" .Values.env.QUEUE_NAME | quote }}
+            - name: CORE_API_BASE
+              value: {{ required "env.CORE_API_BASE is required" .Values.env.CORE_API_BASE | quote }}
+            - name: REDIS_URL
+              value: {{ required "env.REDIS_URL is required" .Values.env.REDIS_URL | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds | default 10 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds | default 10 }}

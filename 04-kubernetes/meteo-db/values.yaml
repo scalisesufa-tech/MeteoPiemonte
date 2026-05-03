@@ -1,8 +1,32 @@
+# Default values for meteo-db.
+
 replicaCount: 1
 
 image:
   repository: timescale/timescaledb
+  pullPolicy: IfNotPresent
   tag: "latest-pg14"
 
 nameOverride: ""
 fullnameOverride: "meteo-db"
+
+auth:
+  database: "meteo"
+  username: "meteo"
+  password: "meteo"
+
+service:
+  type: ClusterIP
+  port: 5432
+
+storage:
+  className: "csi-cinder-fast"
+  size: "10Gi"
+
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10

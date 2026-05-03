@@ -1,51 +1,52 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: '{{ include "rabbitmq.fullname" . }}'
+  name: {{ include "rabbitmq.fullname" . }}
   labels:
-    app: '{{ include "rabbitmq.fullname" . }}'
+    {{- include "rabbitmq.labels" . | nindent 4 }}
 spec:
-  serviceName: '{{ include "rabbitmq.fullname" . }}'
-  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "rabbitmq.fullname" . }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      app: '{{ include "rabbitmq.fullname" . }}'
+      {{- include "rabbitmq.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: '{{ include "rabbitmq.fullname" . }}'
+        {{- include "rabbitmq.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - name: '{{ include "rabbitmq.fullname" . }}'
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        ports:
-        - containerPort: 5672
-          name: amqp
-        - containerPort: 15672
-          name: mgmt
-        envFrom:
-        - secretRef:
-            name: rabbitmq-secret
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/rabbitmq
-        readinessProbe:
-          tcpSocket:
-            port: 5672
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        livenessProbe:
-          tcpSocket:
-            port: 5672
-          initialDelaySeconds: 90
-          periodSeconds: 10
+        - name: {{ .Chart.Name }}
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: amqp
+              containerPort: 5672
+            - name: mgmt
+              containerPort: 15672
+          envFrom:
+            - secretRef:
+                name: {{ include "rabbitmq.fullname" . }}-secret
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/rabbitmq
+          readinessProbe:
+            tcpSocket:
+              port: amqp
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds | default 30 }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds | default 10 }}
+          livenessProbe:
+            tcpSocket:
+              port: amqp
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds | default 90 }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds | default 10 }}
   volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      storageClassName: csi-cinder-fast
-      resources:
-        requests:
-          storage: 5Gi
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.storage.className | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.storage.size | quote }}

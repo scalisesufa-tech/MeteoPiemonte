@@ -1,0 +1,24 @@
+dependencies:
+- name: frontend
+  repository: file://../frontend
+  version: 0.1.0
+- name: meteo-core
+  repository: file://../meteo-core
+  version: 0.1.0
+- name: meteo-db
+  repository: file://../meteo-db
+  version: 0.1.0
+- name: analysis-service
+  repository: file://../analysis-service
+  version: 0.1.0
+- name: grafana
+  repository: file://../grafana
+  version: 0.1.0
+- name: rabbitmq
+  repository: file://../rabbitmq
+  version: 0.1.0
+- name: redis
+  repository: file://../redis
+  version: 0.1.0
+digest: sha256:561844c51322b23cb92ae02ab65f2ca1f91111f2e2cf86e9264141565902ee7a
+generated: "2026-05-03T22:21:42.163606+02:00"

@@ -1,6 +1,12 @@
 apiVersion: v2
 name: rabbitmq
-description: A Helm chart for rabbitmq
+description: RabbitMQ message broker for MeteoPiemonte.
 type: application
 version: 0.1.0
 appVersion: "3-management"
+keywords:
+  - meteopiemonte
+  - rabbitmq
+  - messaging
+maintainers:
+  - name: alessandroscalise

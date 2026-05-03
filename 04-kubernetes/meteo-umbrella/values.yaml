@@ -1,0 +1,16 @@
+# Default values for meteo-umbrella.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  # Global configuration parameters
+  imagePullPolicy: Always
+  namespace: group-6
+
+# You can override sub-chart values here by defining a key with the chart name
+# For example:
+# frontend:
+#   replicaCount: 2
+# meteo-core:
+#   image:
+#     tag: "v1.0.0"

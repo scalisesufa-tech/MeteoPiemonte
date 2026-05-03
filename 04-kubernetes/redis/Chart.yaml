@@ -1,6 +1,12 @@
 apiVersion: v2
 name: redis
-description: A Helm chart for redis
+description: Redis caching service for MeteoPiemonte.
 type: application
 version: 0.1.0
-appVersion: "7-alpine"
+appVersion: "latest"
+keywords:
+  - meteopiemonte
+  - redis
+  - cache
+maintainers:
+  - name: alessandroscalise

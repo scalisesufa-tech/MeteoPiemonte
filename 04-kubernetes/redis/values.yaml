@@ -1,8 +1,23 @@
+# Default values for redis.
+
 replicaCount: 1
 
 image:
   repository: redis
-  tag: "7-alpine"
+  pullPolicy: IfNotPresent
+  tag: "alpine"
 
 nameOverride: ""
 fullnameOverride: "redis"
+
+service:
+  type: ClusterIP
+  port: 6379
+
+probes:
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 10

@@ -1,8 +1,33 @@
+# Default values for rabbitmq.
+
 replicaCount: 1
 
 image:
   repository: rabbitmq
+  pullPolicy: IfNotPresent
   tag: "3-management"
 
 nameOverride: ""
 fullnameOverride: "rabbitmq"
+
+auth:
+  username: "guest"
+  password: "guest"
+
+service:
+  type: ClusterIP
+  ports:
+    amqp: 5672
+    mgmt: 15672
+
+storage:
+  className: "csi-cinder-fast"
+  size: "5Gi"
+
+probes:
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 90
+    periodSeconds: 10

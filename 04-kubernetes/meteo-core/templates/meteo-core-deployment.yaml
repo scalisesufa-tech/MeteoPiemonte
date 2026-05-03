@@ -1,68 +1,69 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: '{{ include "meteo-core.fullname" . }}'
+  name: {{ include "meteo-core.fullname" . }}
   labels:
-    app: '{{ include "meteo-core.fullname" . }}'
+    {{- include "meteo-core.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 2 }}
   selector:
     matchLabels:
-      app: '{{ include "meteo-core.fullname" . }}'
+      {{- include "meteo-core.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: '{{ include "meteo-core.fullname" . }}'
+        {{- include "meteo-core.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - name: '{{ include "meteo-core.fullname" . }}'
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-          name: http
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: docker
-        - name: JAVA_TOOL_OPTIONS
-          value: "-Djava.net.preferIPv4Stack=true"
-        - name: SPRING_DATASOURCE_URL
-          value: jdbc:postgresql://meteo-db:5432/meteo
-        - name: SPRING_DATASOURCE_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: meteo-db-secret
-              key: POSTGRES_USER
-        - name: SPRING_DATASOURCE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: meteo-db-secret
-              key: POSTGRES_PASSWORD
-        - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
-          value: org.hibernate.dialect.PostgreSQLDialect
-        - name: SPRING_RABBITMQ_HOST
-          value: rabbitmq
-        - name: SPRING_RABBITMQ_PORT
-          value: '5672'
-        - name: SPRING_RABBITMQ_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: rabbitmq-secret
-              key: RABBITMQ_DEFAULT_USER
-        - name: SPRING_RABBITMQ_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: rabbitmq-secret
-              key: RABBITMQ_DEFAULT_PASS
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 80
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 120
-          periodSeconds: 15
+        - name: {{ .Chart.Name }}
+          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.env.SPRING_PROFILES_ACTIVE | quote }}
+            - name: JAVA_TOOL_OPTIONS
+              value: {{ .Values.env.JAVA_TOOL_OPTIONS | quote }}
+            - name: SPRING_DATASOURCE_URL
+              value: {{ required "env.SPRING_DATASOURCE_URL is required" .Values.env.SPRING_DATASOURCE_URL | quote }}
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "secrets.database.name is required" .Values.secrets.database.name }}
+                  key: {{ required "secrets.database.userKey is required" .Values.secrets.database.userKey }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.database.name }}
+                  key: {{ required "secrets.database.passwordKey is required" .Values.secrets.database.passwordKey }}
+            - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+              value: {{ .Values.env.SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT | quote }}
+            - name: SPRING_RABBITMQ_HOST
+              value: {{ required "env.SPRING_RABBITMQ_HOST is required" .Values.env.SPRING_RABBITMQ_HOST | quote }}
+            - name: SPRING_RABBITMQ_PORT
+              value: {{ .Values.env.SPRING_RABBITMQ_PORT | quote }}
+            - name: SPRING_RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "secrets.rabbitmq.name is required" .Values.secrets.rabbitmq.name }}
+                  key: {{ required "secrets.rabbitmq.userKey is required" .Values.secrets.rabbitmq.userKey }}
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.rabbitmq.name }}
+                  key: {{ required "secrets.rabbitmq.passwordKey is required" .Values.secrets.rabbitmq.passwordKey }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds | default 120 }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds | default 15 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds | default 80 }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds | default 10 }}

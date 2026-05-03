@@ -1,6 +1,12 @@
 apiVersion: v2
 name: grafana
-description: A Helm chart for grafana
+description: Grafana dashboards for monitoring MeteoPiemonte.
 type: application
 version: 0.1.0
 appVersion: "latest"
+keywords:
+  - meteopiemonte
+  - grafana
+  - monitoring
+maintainers:
+  - name: alessandroscalise

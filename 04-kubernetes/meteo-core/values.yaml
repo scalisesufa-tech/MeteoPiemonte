@@ -1,8 +1,48 @@
+# Default values for meteo-core.
 replicaCount: 2
 
 image:
   repository: scalisufa/meteo-core
+  pullPolicy: IfNotPresent
   tag: "latest"
 
 nameOverride: ""
 fullnameOverride: "meteo-core"
+
+env:
+  SPRING_PROFILES_ACTIVE: "docker"
+  JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://meteo-db:5432/meteo"
+  SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
+  SPRING_RABBITMQ_HOST: "rabbitmq"
+  SPRING_RABBITMQ_PORT: "5672"
+
+secrets:
+  database:
+    name: "meteo-db-secret"
+    userKey: "POSTGRES_USER"
+    passwordKey: "POSTGRES_PASSWORD"
+  rabbitmq:
+    name: "rabbitmq-secret"
+    userKey: "RABBITMQ_DEFAULT_USER"
+    passwordKey: "RABBITMQ_DEFAULT_PASS"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+probes:
+  readiness:
+    initialDelaySeconds: 80
+    periodSeconds: 10
+    path: /actuator/health/readiness
+  liveness:
+    initialDelaySeconds: 120
+    periodSeconds: 15
+    path: /actuator/health/liveness
+
+route:
+  enabled: true
+  gatewayName: shared-gateway
+  gatewayNamespace: default
+  pathPrefix: /group-6/core

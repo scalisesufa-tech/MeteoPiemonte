@@ -1,8 +1,37 @@
+# Default values for grafana.
+
 replicaCount: 1
 
 image:
   repository: grafana/grafana
+  pullPolicy: IfNotPresent
   tag: "latest"
 
 nameOverride: ""
 fullnameOverride: "grafana"
+
+auth:
+  adminUser: "admin"
+  adminPassword: "admin"
+
+datasource:
+  url: "meteo-db:5432"
+  database: "meteo"
+  user: "meteo"
+  password: "meteo"
+
+service:
+  type: ClusterIP
+  port: 3000
+
+storage:
+  className: "csi-cinder-fast"
+  size: "5Gi"
+
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10

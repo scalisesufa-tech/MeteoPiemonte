@@ -1,6 +1,11 @@
 apiVersion: v2
 name: frontend
-description: A Helm chart for frontend
+description: Frontend microservice for MeteoPiemonte, displaying weather data.
 type: application
 version: 0.1.0
 appVersion: "latest"
+keywords:
+  - meteopiemonte
+  - frontend
+maintainers:
+  - name: alessandroscalise
