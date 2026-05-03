@@ -1,0 +1,16 @@
+# Umbrella values file.
+#
+# Each top-level key maps to a dependent chart name.
+# Example:
+# meteo-core:
+#   replicaCount: 2
+#   image:
+#     tag: stable
+
+meteo-core: {}
+analysis-service: {}
+frontend: {}
+meteo-db: {}
+redis: {}
+rabbitmq: {}
+grafana: {}

@@ -1,0 +1,36 @@
+apiVersion: v2
+name: meteopiemonte
+version: 0.1.0
+description: Umbrella Helm chart that deploys the full MeteoPiemonte microservice stack.
+type: application
+keywords:
+  - weather
+  - microservices
+  - gateway-api
+home: https://github.com/scalisesufa-tech/MeteoPiemonte
+sources:
+  - https://github.com/scalisesufa-tech/MeteoPiemonte
+maintainers:
+  - name: MeteoPiemonte Team
+dependencies:
+  - name: meteo-core
+    version: 0.1.0
+    repository: "file://../meteo-core"
+  - name: analysis-service
+    version: 0.1.0
+    repository: "file://../analysis-service"
+  - name: frontend
+    version: 0.1.0
+    repository: "file://../frontend"
+  - name: meteo-db
+    version: 0.1.0
+    repository: "file://../meteo-db"
+  - name: redis
+    version: 0.1.0
+    repository: "file://../redis"
+  - name: rabbitmq
+    version: 0.1.0
+    repository: "file://../rabbitmq"
+  - name: grafana
+    version: 0.1.0
+    repository: "file://../grafana"
